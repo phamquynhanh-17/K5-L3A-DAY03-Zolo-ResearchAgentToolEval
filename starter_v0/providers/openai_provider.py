@@ -20,8 +20,8 @@ class OpenAIProvider:
     ) -> None:
         self.api_key_env = api_key_env
         self.api_key_default = api_key_default
-        self.base_url = base_url
-        self.default_model = default_model
+        self.base_url = base_url or os.getenv("OPENAI_BASE_URL")
+        self.default_model = os.getenv("OPENAI_MODEL", default_model)
 
     def complete(
         self,

@@ -1,7 +1,292 @@
 {
   "dataset_id": "day03_v2_research_group",
   "dataset_role": "group",
-  "description": "Case do NHÓM tự viết thêm để cover thêm trường hợp. Mỗi case cần: id, phase='B', query HOẶC turns, failure_type (thuộc allowed_failure_types), và expect (tool_calls[...] hoặc no_tool=true). Nên kèm metadata.what_it_tests.",
+  "description": "Bộ 10 eval case do nhóm Zolo xây dựng (5 single-turn + 5 multi-turn), kiểm tra routing tới tool mới github_search, học thuật arXiv, policy nội bộ, clarify và boundary xác nhận.",
   "allowed_failure_types": ["wrong_tool", "wrong_arg_value", "wrong_boundary", "unnecessary_tool", "out_of_scope", "missing_info"],
-  "cases": []
+  "cases": [
+    {
+      "id": "G01_github_repo_routing",
+      "phase": "B",
+      "suite": "group",
+      "query": "Tìm các repository GitHub nhiều sao nhất về RAG.",
+      "failure_type": "wrong_tool",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "github_search",
+            "args": {
+              "query": "RAG",
+              "sort": "stars"
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "skill": "new_tool_routing",
+        "difficulty": "easy",
+        "what_it_tests": "Định tuyến sang tool mới github_search khi người dùng tìm kiếm kho mã nguồn mở trên GitHub theo số sao."
+      }
+    },
+    {
+      "id": "G02_arxiv_papers_routing",
+      "phase": "B",
+      "suite": "group",
+      "query": "Tìm giúp mình 3 bài báo khoa học trên arXiv về Mixture of Experts.",
+      "failure_type": "wrong_tool",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "papers",
+            "args": {
+              "query": "Mixture of Experts",
+              "max_results": 3
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "skill": "academic_routing",
+        "difficulty": "easy",
+        "what_it_tests": "Định tuyến sang tool papers khi người dùng yêu cầu tìm bài báo khoa học học thuật trên arXiv kèm giới hạn số lượng."
+      }
+    },
+    {
+      "id": "G03_policy_privacy_lookup",
+      "phase": "B",
+      "suite": "group",
+      "query": "Tra cứu quy định nội bộ của công ty về bảo mật dữ liệu cá nhân (data privacy).",
+      "failure_type": "wrong_arg_value",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "policy",
+            "args": {
+              "policy_area": "data_privacy"
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "skill": "policy_area_arg",
+        "difficulty": "medium",
+        "what_it_tests": "Chọn đúng tool policy và truyền đúng phân vùng policy_area='data_privacy' khi tra cứu quy định nội bộ."
+      }
+    },
+    {
+      "id": "G04_missing_arxiv_id",
+      "phase": "B",
+      "suite": "group",
+      "query": "Trích xuất toàn văn nội dung bài báo arXiv đó giúp mình với.",
+      "failure_type": "missing_info",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "clarify",
+            "args": {
+              "response_type": "text"
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "skill": "clarify_missing_input",
+        "difficulty": "medium",
+        "what_it_tests": "Khi người dùng yêu cầu đọc bài báo arXiv nhưng chưa cung cấp ID hoặc URL, agent phải gọi clarify(response_type='text') thay vì tự đoán."
+      }
+    },
+    {
+      "id": "G05_out_of_scope_concept",
+      "phase": "B",
+      "suite": "group",
+      "query": "Giải thích ngắn gọn khái niệm Overfitting trong học máy là gì?",
+      "failure_type": "unnecessary_tool",
+      "expect": {
+        "no_tool": true
+      },
+      "metadata": {
+        "skill": "no_tool_needed",
+        "difficulty": "easy",
+        "what_it_tests": "Câu hỏi kiến thức nền tảng cố định không cần tra cứu thời gian thực -> trả lời trực tiếp, không gọi tool."
+      }
+    },
+    {
+      "id": "G06_github_clarify_then_search",
+      "phase": "B",
+      "suite": "group",
+      "turns": [
+        {
+          "role": "user",
+          "content": "Tìm giúp mình các repo mã nguồn mở nổi bật trên GitHub."
+        },
+        {
+          "role": "assistant",
+          "content": "Bạn muốn tìm repository GitHub về chủ đề hay công nghệ nào?"
+        },
+        {
+          "role": "user",
+          "content": "Tìm về LangChain, lấy 5 repo nhiều sao nhất nhé."
+        }
+      ],
+      "failure_type": "wrong_tool",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "github_search",
+            "args": {
+              "query": "LangChain",
+              "sort": "stars",
+              "max_results": 5
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "skill": "multiturn_new_tool",
+        "difficulty": "medium",
+        "what_it_tests": "Hội thoại nhiều lượt: sau khi làm rõ chủ đề, gọi đúng tool mới github_search với đầy đủ tham số."
+      }
+    },
+    {
+      "id": "G07_confirm_then_send_digest",
+      "phase": "B",
+      "suite": "group",
+      "turns": [
+        {
+          "role": "user",
+          "content": "Gửi bản tin 'AI Digest: Các mô hình ngôn ngữ mới năm 2026' lên Telegram giúp mình."
+        },
+        {
+          "role": "assistant",
+          "content": "Bạn có chắc chắn muốn gửi bản tin này lên Telegram không?"
+        },
+        {
+          "role": "user",
+          "content": "Xác nhận đồng ý, gửi ngay bản tin 'AI Digest: Các mô hình ngôn ngữ mới năm 2026' đi nhé."
+        }
+      ],
+      "failure_type": "wrong_boundary",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "send",
+            "args": {
+              "confirmed": true
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "skill": "confirm_then_act",
+        "difficulty": "medium",
+        "what_it_tests": "Sau khi người dùng đã xác nhận đồng ý rõ ràng ở lượt sau, agent gọi send với confirmed=true."
+      }
+    },
+    {
+      "id": "G08_switch_tweets_to_github",
+      "phase": "B",
+      "suite": "group",
+      "turns": [
+        {
+          "role": "user",
+          "content": "Tìm các tweet mới nhất nói về vLLM."
+        },
+        {
+          "role": "assistant",
+          "content": "Mình đã tìm các bài đăng mạng xã hội về vLLM."
+        },
+        {
+          "role": "user",
+          "content": "Thôi đừng tìm tweet nữa, hãy tìm các repository trên GitHub về vLLM xếp theo số sao."
+        }
+      ],
+      "failure_type": "wrong_tool",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "github_search",
+            "args": {
+              "query": "vLLM",
+              "sort": "stars"
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "skill": "multiturn_switch_tool",
+        "difficulty": "medium",
+        "what_it_tests": "Chuyển đổi công cụ từ social_search sang github_search khi người dùng đổi ý trong hội thoại nhiều lượt."
+      }
+    },
+    {
+      "id": "G09_fetch_after_url_provided",
+      "phase": "B",
+      "suite": "group",
+      "turns": [
+        {
+          "role": "user",
+          "content": "Tóm tắt nội dung bài viết trên trang web này giúp mình."
+        },
+        {
+          "role": "assistant",
+          "content": "Bạn vui lòng cung cấp địa chỉ URL của trang web cần tóm tắt."
+        },
+        {
+          "role": "user",
+          "content": "Link đây nhé: https://huggingface.co/blog/open-r1"
+        }
+      ],
+      "failure_type": "wrong_arg_value",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "fetch",
+            "args": {
+              "url": "https://huggingface.co/blog/open-r1"
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "skill": "multiturn_fill_slot",
+        "difficulty": "easy",
+        "what_it_tests": "Sau khi hỏi lại URL và được người dùng cung cấp ở lượt tiếp theo, gọi fetch với đúng URL đó."
+      }
+    },
+    {
+      "id": "G10_timeline_limit_correction",
+      "phase": "B",
+      "suite": "group",
+      "turns": [
+        {
+          "role": "user",
+          "content": "Lấy 3 tweet gần đây của tài khoản karpathy."
+        },
+        {
+          "role": "assistant",
+          "content": "Đã lấy 3 tweet gần nhất từ @karpathy."
+        },
+        {
+          "role": "user",
+          "content": "Lấy lại giúp mình 8 tweet gần đây của cùng tài khoản karpathy đó nhé."
+        }
+      ],
+      "failure_type": "wrong_arg_value",
+      "expect": {
+        "tool_calls": [
+          {
+            "name": "timeline",
+            "args": {
+              "screenname": "karpathy",
+              "limit": 8
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "skill": "multiturn_arg_override",
+        "difficulty": "easy",
+        "what_it_tests": "Giữ nguyên ngữ cảnh tài khoản karpathy từ lượt trước và cập nhật tham số limit=8 ở lượt hiện tại."
+      }
+    }
+  ]
 }
